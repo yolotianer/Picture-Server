@@ -53,6 +53,7 @@ public class ImageServlet extends HttpServlet {
     }
 
 
+
     private void selectAll(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json; charset=utf-8");
         //1.创建一个ImageDao对象，并查找数据库
@@ -147,7 +148,7 @@ public class ImageServlet extends HttpServlet {
             }
         }
         //进行重定向，让客户直接看到结果
-        resp.sendRedirect("index.html");
+        //resp.sendRedirect("index.html");
     }
 
     /**

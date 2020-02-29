@@ -17,7 +17,7 @@ import java.io.OutputStream;
  * @author yolo
  * @date 2020/2/28-14:27
  */
-@WebServlet("imageShow")
+@WebServlet("/imageShow")
 public class ImageShowServlet extends HttpServlet {
     /**
      * 查看图片
