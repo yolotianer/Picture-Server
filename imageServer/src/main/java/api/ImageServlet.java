@@ -94,11 +94,18 @@ public class ImageServlet extends HttpServlet {
         1.需要创建一个factory对象和upload对象，这是为了获得到图片属性
           固定逻辑
          */
-        FileItemFactory factory = new DiskFileItemFactory();
-        ServletFileUpload upload = new ServletFileUpload(factory);
+        FileItemFactory factory = new DiskFileItemFactory();//1.设置环境:创建一个DiskFileItemFactory工厂
+        ServletFileUpload upload = new ServletFileUpload(factory);//2.核心操作类:创建一个文件上传解析器。
         /*
-         通过 upload 对象进一步解析请求(解析HTTP请求中奇怪的 body 中的内容)
-            FileItem 就代表一个上传的文件对象.理论上来说, HTTP 支持一个请求中同时上传多个文件
+         使用ServletFileUpload解析器解析上传数据
+            解析结果返回的是一个List<FileItem>集合每一个FileItem对应一个Form表单的输入项，也就是我们上传的一个文件
+            List<FileItem> items =upload.parseRequest(req);
+
+        public List parseRequest(javax.servlet.http.HttpServletRequest req)
+        parseRequest 方法是ServletFileUpload类的重要方法，它是对HTTP请求消息体内容进行解析的入口方法。
+        它解析出FORM表单中的每个字段的数据，并将它们分别包装成独立的FileItem对象
+        然后将这些FileItem对象加入进一个List类型的集合对象中返回。
+
          */
 
         List<FileItem>items=null;
@@ -113,20 +120,21 @@ public class ImageServlet extends HttpServlet {
             resp.getWriter().write("{ \"ok\": false, \"reason\": \"请求解析失败\" }");
             return;
         }
+
         //考虑每次只上传一张图片
         FileItem fileItem=items.get(0);
         Image image=new Image();
         //获取图片信息
         image.setImageName(fileItem.getName());
         image.setSize((int)fileItem.getSize());
-        // 手动获取一下当前日期, 并转成格式化日期, yyMMdd => 20200218
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");// 手动获取一下当前日期, 并转成格式化日期, yyMMdd => 20200218
         image.setUploadTime(simpleDateFormat.format(new Date()));
+
         image.setContentType(fileItem.getContentType());
-        // MD5 暂时先不去计算
-        image.setMd5(fileItem.get().toString());
-        // 自己构造一个路径来保存, 引入时间戳是为了让文件路径能够唯一
-        image.setPath("./image/" + image.getUploadTime());
+        //文件在服务器上存储的路径
+        image.setPath("./image/" + System.currentTimeMillis()+"_"+image.getImageName());// 自己构造一个路径来保存, 引入时间戳是为了让文件路径能够唯一
+        image.setMd5(fileItem.get().toString());// MD5 暂时先不去计算
 
         //存入数据库
         ImageDao imageDao=new ImageDao();
@@ -134,20 +142,20 @@ public class ImageServlet extends HttpServlet {
 
         // 2. 获取图片的内容信息, 若磁盘或中还没有相同图片，则写入磁盘文件，否则不写入
         // 看看数据库中是否存在相同的 MD5 值的图片, 不存在, 返回 null
-        Image existImage = imageDao.selectByMd5(image.getMd5());
-        if (existImage == null) {
-            File file = new File(image.getPath());
-            try {
-                fileItem.write(file);
-            } catch (Exception e) {
-                e.printStackTrace();
-
-                resp.setContentType("application/json; charset=utf-8");
-                resp.getWriter().write("{ \"ok\": false, \"reason\": \"写磁盘失败\" }");
-                return;
-            }
-        }
-        //进行重定向，让客户直接看到结果
+//        Image existImage = imageDao.selectByMd5(image.getMd5());
+//        if (existImage == null) {
+//            File file = new File(image.getPath());
+//            try {
+//                fileItem.write(file);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//
+//                resp.setContentType("application/json; charset=utf-8");
+//                resp.getWriter().write("{ \"ok\": false, \"reason\": \"写磁盘失败\" }");
+//                return;
+//            }
+//        }
+        //进行重定向，让客户直接看到结果-302重定向
         //resp.sendRedirect("index.html");
     }
 
