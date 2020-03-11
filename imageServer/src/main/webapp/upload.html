@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>文件上传练习</title>
+<head>    <meta charset="UTF-8">
+    <title>相册</title>
 </head>
 <body>
-    <from action="upload",method="post",nectype="multipart/from-data">
-        <input type="file",name="file">
-        <input type="submit",value="上传">
-    </from>
+<form id="upload-form" action="image" method="post" enctype="multipart/form-data" >
+    　　　<input type="file" id="upload" name="upload" /> <br />
+    　　　<input type="submit" value="Upload" />
+</form>
 </body>
 </html>
