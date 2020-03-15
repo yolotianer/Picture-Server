@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashSet;
 
 /**
  * @author yolo
@@ -19,15 +20,10 @@ import java.io.OutputStream;
  */
 @WebServlet("/imageShow")
 public class ImageShowServlet extends HttpServlet {
-    /**
-     * 查看图片
-     * @param req
-     * @param resp
-     * @throws ServletException
-     * @throws IOException
-     */
+
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws  IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
         // 1. 解析出 imageId
         String imageId = req.getParameter("imageId");
         if (imageId == null || imageId.equals("")) {

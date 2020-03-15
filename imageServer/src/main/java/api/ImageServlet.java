@@ -28,7 +28,7 @@ import java.util.List;
 @WebServlet("/image")
 public class ImageServlet extends HttpServlet {
     /**
-     * 查看图片信息：查看所有，查看指定
+     * 查看图片属性: 既能查看所有, 也能查看指定
      * @param req
      * @param resp
      * @throws ServletException
@@ -42,7 +42,7 @@ public class ImageServlet extends HttpServlet {
         // 例如: URL /image?imageId=100
         // imageId 的值就是 "100"
         // 如果 URL 中不存在 imageId 那么返回 null
-        String imageId=req.getParameter("imageId");
+        String imageId = req.getParameter("imageId");
         if (imageId == null || imageId.equals("")) {
             // 查看所有图片属性
             selectAll(req, resp);
@@ -52,33 +52,30 @@ public class ImageServlet extends HttpServlet {
         }
     }
 
-
-
     private void selectAll(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json; charset=utf-8");
-        //1.创建一个ImageDao对象，并查找数据库
-        ImageDao imageDao=new ImageDao();
+        // 1. 创建一个 ImageDao 对象, 并查找数据库
+        ImageDao imageDao = new ImageDao();
         List<Image> images = imageDao.selectAll();
-        //2.把查找到的信息转换成JSON格式字符串，写回resp对象
-        Gson gson=new GsonBuilder().create();
-        String toJson = gson.toJson(images);
-
-        resp.getWriter().write(toJson);
+        // 2. 把查找到的结果转成 JSON 格式的字符串, 并且写回给 resp 对象
+        Gson gson = new GsonBuilder().create();
+        //    jsonData 就是一个 json 格式的字符串了, 就和之前约定的格式是一样的了.
+        //    重点体会下面这行代码, 这个方法的核心, gson 帮我们自动完成了大量的格式转换工作
+        //    只要把之前的相关的字段都约定成统一的命名, 下面的操作就可以一步到位的完成整个转换
+        String jsonData = gson.toJson(images);
+        resp.getWriter().write(jsonData);
     }
 
     private void selectOne(String imageId, HttpServletResponse resp) throws IOException {
-        //1.设置类型ContentType
         resp.setContentType("application/json; charset=utf-8");
-        //2.创建ImageDao对象，对数据库进行查找
-        ImageDao imageDao=new ImageDao();
+        // 1. 创建 ImageDao 对象
+        ImageDao imageDao = new ImageDao();
         Image image = imageDao.selectOne(Integer.parseInt(imageId));
-        //3.创建Gson对象,把查到的数据转换成json格式，宁写回响应
-        Gson gson=new GsonBuilder().create();
-        String toJson = gson.toJson(image);
-        resp.getWriter().write(toJson);
-
+        // 2. 使用 gson 把查到的数据转成 json 格式, 并写回给响应对象
+        Gson gson = new GsonBuilder().create();
+        String jsonData = gson.toJson(image);
+        resp.getWriter().write(jsonData);
     }
-
 
     /**
      * 上传图片
@@ -89,74 +86,67 @@ public class ImageServlet extends HttpServlet {
      */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        /*
-        获取图片信息，并切存入数据库
-        1.需要创建一个factory对象和upload对象，这是为了获得到图片属性
-          固定逻辑
-         */
-        FileItemFactory factory = new DiskFileItemFactory();//1.设置环境:创建一个DiskFileItemFactory工厂
-        ServletFileUpload upload = new ServletFileUpload(factory);//2.核心操作类:创建一个文件上传解析器。
-        /*
-         使用ServletFileUpload解析器解析上传数据
-            解析结果返回的是一个List<FileItem>集合每一个FileItem对应一个Form表单的输入项，也就是我们上传的一个文件
-            List<FileItem> items =upload.parseRequest(req);
-
-        public List parseRequest(javax.servlet.http.HttpServletRequest req)
-        parseRequest 方法是ServletFileUpload类的重要方法，它是对HTTP请求消息体内容进行解析的入口方法。
-        它解析出FORM表单中的每个字段的数据，并将它们分别包装成独立的FileItem对象
-        然后将这些FileItem对象加入进一个List类型的集合对象中返回。
-
-         */
-
-        List<FileItem>items=null;
+        // 1. 获取图片的属性信息, 并且存入数据库
+        //  a) 需要创建一个 factory 对象 和 upload 对象, 这是为了获取到图片属性做的准备工作
+        //     固定的逻辑
+        req.setCharacterEncoding("utf-8");
+        FileItemFactory factory = new DiskFileItemFactory();
+        ServletFileUpload upload = new ServletFileUpload(factory);
+        // b) 通过 upload 对象进一步解析请求(解析HTTP请求中奇怪的 body 中的内容)
+        //    FileItem 就代表一个上传的文件对象.
+        //    理论上来说, HTTP 支持一个请求中同时上传多个文件
+        List<FileItem> items = null;
         try {
             items = upload.parseRequest(req);
-        } catch (FileUploadException e) {
-            //打印异常栈
+        } catch (FileUploadException            // 出现异常说明解析出错!
+                e) {
             e.printStackTrace();
-
             // 告诉客户端出现的具体的错误是啥
             resp.setContentType("application/json; charset=utf-8");
             resp.getWriter().write("{ \"ok\": false, \"reason\": \"请求解析失败\" }");
             return;
         }
-
-        //考虑每次只上传一张图片
-        FileItem fileItem=items.get(0);
-        Image image=new Image();
-        //获取图片信息
+        //  c) 把 FileItem 中的属性提取出来, 转换成 Image 对象, 才能存到数据库中
+        //     当前只考虑一张图片的情况
+        FileItem fileItem = items.get(0);
+        Image image = new Image();
         image.setImageName(fileItem.getName());
+
         image.setSize((int)fileItem.getSize());
-
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");// 手动获取一下当前日期, 并转成格式化日期, yyMMdd => 20200218
+        // 手动获取一下当前日期, 并转成格式化日期, yyMMdd => 20200218
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
         image.setUploadTime(simpleDateFormat.format(new Date()));
-
         image.setContentType(fileItem.getContentType());
-        //文件在服务器上存储的路径
-        image.setPath("./image/" + System.currentTimeMillis()+"_"+image.getImageName());// 自己构造一个路径来保存, 引入时间戳是为了让文件路径能够唯一
-        image.setMd5(fileItem.get().toString());// MD5 暂时先不去计算
+        // MD5 暂时先不去计算
+        image.setMd5(fileItem.get().toString());
+        // 自己构造一个路径来保存, 引入时间戳是为了让文件路径能够唯一
+        image.setPath("./image/" + image.getMd5());
+        // 存到数据库中
+        ImageDao imageDao = new ImageDao();
 
-        //存入数据库
-        ImageDao imageDao=new ImageDao();
+        // 看看数据库中是否存在相同的 MD5 值的图片, 不存在, 返回 null
+        Image existImage = imageDao.selectByMd5(image.getMd5());
+
         imageDao.insert(image);
 
-        // 2. 获取图片的内容信息, 若磁盘或中还没有相同图片，则写入磁盘文件，否则不写入
-        // 看看数据库中是否存在相同的 MD5 值的图片, 不存在, 返回 null
-//        Image existImage = imageDao.selectByMd5(image.getMd5());
-//        if (existImage == null) {
-//            File file = new File(image.getPath());
-//            try {
-//                fileItem.write(file);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//
-//                resp.setContentType("application/json; charset=utf-8");
-//                resp.getWriter().write("{ \"ok\": false, \"reason\": \"写磁盘失败\" }");
-//                return;
-//            }
-//        }
-        //进行重定向，让客户直接看到结果-302重定向
-        //resp.sendRedirect("index.html");
+        // 2. 获取图片的内容信息, 并且写入磁盘文件
+        if (existImage == null) {
+            File file = new File(image.getPath());
+            try {
+                fileItem.write(file);
+            } catch (Exception e) {
+                e.printStackTrace();
+
+                resp.setContentType("application/json; charset=utf-8");
+                resp.getWriter().write("{ \"ok\": false, \"reason\": \"写磁盘失败\" }");
+                return;
+            }
+        }
+
+        // 3. 给客户端返回一个结果数据
+//        resp.setContentType("application/json; charset=utf-8");
+//        resp.getWriter().write("{ \"ok\": true }");
+        resp.sendRedirect("index.html");
     }
 
     /**
@@ -176,8 +166,7 @@ public class ImageServlet extends HttpServlet {
             resp.getWriter().write("{ \"ok\": false, \"reason\": \"解析请求失败\" }");
             return;
         }
-        // 2. 创建 ImageDao 对象, 查看到该图片对象对应的相关属性
-        // 这是为了知道这个图片对应的文件路径，便于随磁盘进行删除文件操作
+        // 2. 创建 ImageDao 对象, 查看到该图片对象对应的相关属性(这是为了知道这个图片对应的文件路径)
         ImageDao imageDao = new ImageDao();
         Image image = imageDao.selectOne(Integer.parseInt(imageId));
         if (image == null) {
@@ -186,18 +175,11 @@ public class ImageServlet extends HttpServlet {
             resp.getWriter().write("{ \"ok\": false, \"reason\": \"imageId 在数据库中不存在\" }");
             return;
         }
-
         // 3. 删除数据库中的记录
         imageDao.delete(Integer.parseInt(imageId));
-
         // 4. 删除本地磁盘文件
-
-        // 看看数据库中是否存在相同的 MD5 值的图片, 不存在, 返回 null
-        Image existImage = imageDao.selectByMd5(image.getMd5());
-        if (existImage == null) {
-            File file = new File(image.getPath());
-            file.delete();
-        }
+        File file = new File(image.getPath());
+        file.delete();
         resp.setStatus(200);
         resp.getWriter().write("{ \"ok\": true }");
     }

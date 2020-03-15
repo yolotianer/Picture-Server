@@ -25,6 +25,7 @@ public class ImageDao {
         try {
             statement = connection.prepareStatement(sql);
             statement.setString(1, image.getImageName());
+            System.out.println(image.getImageName());
             statement.setInt(2, image.getSize());
             statement.setString(3, image.getUploadTime());
             statement.setString(4, image.getContentType());
