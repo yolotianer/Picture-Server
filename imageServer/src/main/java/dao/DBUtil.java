@@ -10,6 +10,7 @@ import java.sql.*;
  * @date 2020/2/26-20:11
  */
 public class DBUtil {
+    //DataSource的URL
     private static final String URL = "jdbc:mysql://127.0.0.1:3305/java_image_server?characterEncoding=utf8&useSSL=false";
     private static final String USERNAME = "root";
     private static final String PASSWORD = "mmwan980815";
@@ -18,7 +19,7 @@ public class DBUtil {
 
     public static DataSource getDataSource() {
         // 通过这个方法来创建 DataSource 的实例
-        if (dataSource == null) {//2.双重判定(拟面加锁耗时)
+        if (dataSource == null) {//2.双重判定(以免加锁耗时)
             synchronized (DBUtil.class) {//1.加锁
                 if (dataSource == null) {
                     dataSource = new MysqlDataSource();
